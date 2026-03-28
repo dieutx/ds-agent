@@ -1,9 +1,7 @@
-import os
-import json
-import random
 from pathlib import Path
 
 from dynaconf import Dynaconf
+from loguru import logger
 
 settings = Dynaconf(
     envvar_prefix="DYNACONF",
@@ -17,8 +15,13 @@ settings = Dynaconf(
 )
 
 
-with open("accounts.txt", "r") as file:
-    ACCOUNTS = [row.strip() for row in file]
+def _load_lines(filepath: str) -> list[str]:
+    path = Path(filepath)
+    if not path.exists():
+        logger.warning(f"{filepath} not found, using empty list")
+        return []
+    return [line.strip() for line in path.read_text().splitlines() if line.strip()]
 
-with open("proxy.txt", "r") as file:
-    PROXIES = [row.strip() for row in file]
+
+ACCOUNTS = _load_lines("accounts.txt")
+PROXIES = _load_lines("proxy.txt")

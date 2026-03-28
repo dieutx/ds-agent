@@ -107,7 +107,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -150,7 +150,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -181,7 +181,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -229,7 +229,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -262,7 +262,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -290,7 +290,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -325,7 +325,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")
@@ -359,7 +359,7 @@ class DiscordUserClient:
                 )
 
             except aiohttp.ClientError as e:
-                logger.error("Error: {e}")
+                logger.error(f"Error: {e}")
 
             except Exception as e:
                 logger.error(f"Error: {e}")

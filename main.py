@@ -32,8 +32,6 @@ async def main(module: str):
         await run_unified(module)
     elif module == "token_checker":
         await check_tokens()
-    elif module == "export_data":
-        print("Export data not implemented yet")
 
 
 if __name__ == "__main__":
