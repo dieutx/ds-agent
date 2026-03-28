@@ -171,9 +171,6 @@ class MessageSender:
         media_file = random.choice(self.media_files)
 
         async with DiscordUserClient(token=self.account, proxy=self.proxy) as client:
-            if self.proxy:
-                pass
-
             result = await client.send_media_message(channel_id, media_file)
             if result is None:
                 raise Exception

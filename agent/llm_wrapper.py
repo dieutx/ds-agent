@@ -9,26 +9,32 @@ from config.config import settings
 
 
 class LLMFactory:
+    SUPPORTED_PROVIDERS = ("openai", "deepseek", "nous")
+
     def __init__(self, provider: str = None):
         self.provider = provider
         if not self.provider:
             raise ValueError(
-                "Не указан провайдер LLM: передайте 'openai' или 'deepseek' "
-                "в качестве параметра или установите переменную окружения LLM_PROVIDER."
+                f"No LLM provider specified. Pass one of {self.SUPPORTED_PROVIDERS} "
+                "or set the LLM_PROVIDER environment variable."
             )
 
     def get_llm(self):
         api_key = settings.AI.api_key
         if len(api_key) == 0:
-            raise ValueError("Отсутствует переменная окружения DEEPSEEK_API_KEY для провайдера 'deepseek'.")
+            raise ValueError("No API keys configured in config.yaml AI.api_key.")
 
         if self.provider == "openai":
             return self._get_openai_llm(random.choice(api_key))
         elif self.provider == "deepseek":
             return self._get_deepseek_llm(random.choice(api_key))
+        elif self.provider == "nous":
+            return None  # Nous uses its own async client, handled in sender
         else:
             raise ValueError(
-                f"Неизвестный провайдер LLM: '{self.provider}'. Допустимые значения: 'openai', 'deepseek'.")
+                f"Unknown LLM provider: '{self.provider}'. "
+                f"Supported: {self.SUPPORTED_PROVIDERS}"
+            )
 
     @staticmethod
     def _get_openai_llm(api_key: SecretStr):
