@@ -3,16 +3,17 @@ import json
 import random
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 import aiohttp
-from typing import Any, Dict, List, Optional
-
 from aiohttp_socks import ProxyConnector
 from fake_useragent import UserAgent
 from loguru import logger
 
 from config.config import settings
 from utils.exceptions import APIError
+
+T = TypeVar("T")
 
 
 @dataclass
@@ -68,7 +69,7 @@ class DiscordUserClient:
             "User-Agent": self._ua.random,
         }
         if self.proxy:
-            connector = ProxyConnector.from_url("socks5://"+self.proxy)
+            connector = ProxyConnector.from_url("socks5://" + self.proxy)
             self.session = aiohttp.ClientSession(
                 connector=connector,
                 headers=headers
@@ -83,27 +84,42 @@ class DiscordUserClient:
         if self.session:
             await self.session.close()
 
-    async def get_account_info(self) -> AccountInfo | None:
-        url = f"{self.BASE_URL}/users/@me"
-
+    async def _request_with_retry(
+        self,
+        method: str,
+        url: str,
+        handler: Callable[[aiohttp.ClientResponse], Any],
+        **kwargs,
+    ) -> Optional[Any]:
         for attempt in range(settings.SETTINGS.RETRY_COUNT):
             try:
-                async with self.session.get(url) as resp:
+                async with self.session.request(method, url, **kwargs) as resp:
+                    if resp.status == 429:
+                        retry_after = float(resp.headers.get("Retry-After", 5))
+                        logger.warning(
+                            f"[{self.token[:8]}] Rate limited, waiting {retry_after:.1f}s"
+                        )
+                        await asyncio.sleep(retry_after)
+                        continue
+
                     data = await resp.json()
 
                     if resp.status != 200:
                         raise APIError(resp.status, data)
 
-                    account_info = AccountInfo(data['id'], data['username'])
+                    return handler(data)
 
-                    return account_info
             except APIError as e:
+                msg = e.payload.get("message", str(e.payload)) if isinstance(e.payload, dict) else str(e.payload)
                 logger.warning(
                     f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
+                    f"failed for {self.token[:8]}...: {msg}"
                 )
                 await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
+                    random.randint(
+                        settings.SETTINGS.RETRY_DELAY[0],
+                        settings.SETTINGS.RETRY_DELAY[1],
+                    )
                 )
 
             except aiohttp.ClientError as e:
@@ -113,85 +129,51 @@ class DiscordUserClient:
                 logger.error(f"Error: {e}")
         return None
 
+    async def get_account_info(self) -> AccountInfo | None:
+        url = f"{self.BASE_URL}/users/@me"
+        return await self._request_with_retry(
+            "GET", url,
+            lambda data: AccountInfo(data["id"], data["username"]),
+        )
+
     async def get_channel_messages(
-            self,
-            channel_id: str,
-            limit: int = 50
+        self,
+        channel_id: str,
+        limit: int = 50,
     ) -> list[DiscordMessage] | None:
         url = f"{self.BASE_URL}/channels/{channel_id}/messages"
 
-        for attempt in range(settings.SETTINGS.RETRY_COUNT):
-            try:
-                async with self.session.get(url, params={"limit": limit}) as resp:
-                    data = await resp.json()
-
-                    if resp.status != 200:
-                        raise APIError(resp.status, data)
-
-                    messages: List[DiscordMessage] = []
-                    for msg_dict in data:
-                        message_info = DiscordMessage(
-                            message_id=msg_dict['id'],
-                            channel_id=channel_id,
-                            content=msg_dict['content'],
-                            timestamp=msg_dict['timestamp'],
-                            author_id=msg_dict['author']['id'],
-                            author_username=msg_dict['author']['username']
-                        )
-                        messages.append(message_info)
-                    return messages
-            except APIError as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
+        def parse(data):
+            return [
+                DiscordMessage(
+                    message_id=msg["id"],
+                    channel_id=channel_id,
+                    content=msg["content"],
+                    timestamp=msg["timestamp"],
+                    author_id=msg["author"]["id"],
+                    author_username=msg["author"]["username"],
                 )
-                await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
-                )
+                for msg in data
+            ]
 
-            except aiohttp.ClientError as e:
-                logger.error(f"Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-        return None
+        return await self._request_with_retry(
+            "GET", url, parse, params={"limit": limit}
+        )
 
     async def send_message(
-            self,
-            channel_id: str,
-            content: str,
+        self,
+        channel_id: str,
+        content: str,
     ) -> Dict[str, Any] | None:
         url = f"{self.BASE_URL}/channels/{channel_id}/messages"
-
-        for attempt in range(settings.SETTINGS.RETRY_COUNT):
-            try:
-                async with self.session.post(url, json={"content": content}) as resp:
-                    data = await resp.json()
-
-                    if resp.status != 200:
-                        raise APIError(resp.status, data)
-                    return data
-            except APIError as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
-                )
-                await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
-                )
-
-            except aiohttp.ClientError as e:
-                logger.error(f"Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-        return None
-
+        return await self._request_with_retry(
+            "POST", url, lambda data: data, json={"content": content}
+        )
 
     async def send_media_message(
-            self,
-            channel_id: str,
-            media_path: str,
+        self,
+        channel_id: str,
+        media_path: str,
     ) -> Dict[str, Any] | None:
         url = f"{self.BASE_URL}/channels/{channel_id}/messages"
 
@@ -201,7 +183,7 @@ class DiscordUserClient:
                 form.add_field(
                     name="payload_json",
                     value=json.dumps({}),
-                    content_type="application/json"
+                    content_type="application/json",
                 )
 
                 with open(media_path, "rb") as f:
@@ -209,10 +191,18 @@ class DiscordUserClient:
                         name="files[0]",
                         value=f,
                         filename=media_path,
-                        content_type="image/png"
+                        content_type="image/png",
                     )
 
                     async with self.session.post(url, data=form) as resp:
+                        if resp.status == 429:
+                            retry_after = float(resp.headers.get("Retry-After", 5))
+                            logger.warning(
+                                f"[{self.token[:8]}] Rate limited, waiting {retry_after:.1f}s"
+                            )
+                            await asyncio.sleep(retry_after)
+                            continue
+
                         data = await resp.json()
 
                         if resp.status != 200:
@@ -220,12 +210,16 @@ class DiscordUserClient:
 
                         return data
             except APIError as e:
+                msg = e.payload.get("message", str(e.payload)) if isinstance(e.payload, dict) else str(e.payload)
                 logger.warning(
                     f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
+                    f"failed for {self.token[:8]}...: {msg}"
                 )
                 await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
+                    random.randint(
+                        settings.SETTINGS.RETRY_DELAY[0],
+                        settings.SETTINGS.RETRY_DELAY[1],
+                    )
                 )
 
             except aiohttp.ClientError as e:
@@ -234,133 +228,31 @@ class DiscordUserClient:
             except Exception as e:
                 logger.error(f"Error: {e}")
         return None
-
 
     async def get_user_guilds(self, user_id: str) -> List[UserGuilds] | None:
         url = f"{self.BASE_URL}/users/{user_id}/profile"
-
-        for attempt in range(settings.SETTINGS.RETRY_COUNT):
-            try:
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-
-                    if resp.status != 200:
-                        raise APIError(resp.status, data)
-
-                    guilds: List[UserGuilds] = []
-                    for guild in data['mutual_guilds']:
-                        user_guild = UserGuilds(guild["id"])
-                        guilds.append(user_guild)
-                    return guilds
-            except APIError as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
-                )
-                await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
-                )
-
-            except aiohttp.ClientError as e:
-                logger.error(f"Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-        return None
+        return await self._request_with_retry(
+            "GET", url,
+            lambda data: [UserGuilds(g["id"]) for g in data["mutual_guilds"]],
+        )
 
     async def get_guild_info(self, guilds_id: str) -> GuildInfo | None:
         url = f"{self.BASE_URL}/guilds/{guilds_id}"
-
-        for attempt in range(settings.SETTINGS.RETRY_COUNT):
-            try:
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-
-                    if resp.status != 200:
-                        raise APIError(resp.status, data)
-                    guild_info = GuildInfo(data['id'], data['name'])
-                    return guild_info
-            except APIError as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
-                )
-                await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
-                )
-
-            except aiohttp.ClientError as e:
-                logger.error(f"Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-        return None
+        return await self._request_with_retry(
+            "GET", url,
+            lambda data: GuildInfo(data["id"], data["name"]),
+        )
 
     async def get_guild_roles(self, guilds_id: str) -> List[GuildRoles] | None:
         url = f"{self.BASE_URL}/guilds/{guilds_id}/roles"
-
-        for attempt in range(settings.SETTINGS.RETRY_COUNT):
-            try:
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-
-                    if resp.status != 200:
-                        raise APIError(resp.status, data)
-
-                    roles: List[GuildRoles] = []
-                    for roles_dict in data:
-                        role_info = GuildRoles(
-                            id=roles_dict['id'],
-                            name=roles_dict['name'],
-                        )
-                        roles.append(role_info)
-                    return roles
-            except APIError as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
-                )
-                await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
-                )
-
-            except aiohttp.ClientError as e:
-                logger.error(f"Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-        return None
+        return await self._request_with_retry(
+            "GET", url,
+            lambda data: [GuildRoles(id=r["id"], name=r["name"]) for r in data],
+        )
 
     async def get_user_roles_on_guild(self, guilds_id: str, user_id: str) -> List[UserGuildRoles] | None:
         url = f"{self.BASE_URL}/guilds/{guilds_id}/members/{user_id}"
-
-        for attempt in range(settings.SETTINGS.RETRY_COUNT):
-            try:
-                async with self.session.get(url) as resp:
-                    data = await resp.json()
-
-                    if resp.status != 200:
-                        raise APIError(resp.status, data)
-
-                    roles: List[UserGuildRoles] = []
-                    for roles_dict in data["roles"]:
-                        role_info = UserGuildRoles(
-                            id=roles_dict
-                        )
-                        roles.append(role_info)
-                    return roles
-            except APIError as e:
-                logger.warning(
-                    f"Attempt {attempt + 1}/{settings.SETTINGS.RETRY_COUNT} "
-                    f"failed for {self.token[:8]}...: {e.payload['message']}"
-                )
-                await asyncio.sleep(
-                    random.randint(settings.SETTINGS.RETRY_DELAY[0], settings.SETTINGS.RETRY_DELAY[1])
-                )
-
-            except aiohttp.ClientError as e:
-                logger.error(f"Error: {e}")
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-        return None
+        return await self._request_with_retry(
+            "GET", url,
+            lambda data: [UserGuildRoles(id=r) for r in data["roles"]],
+        )
