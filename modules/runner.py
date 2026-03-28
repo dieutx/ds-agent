@@ -53,9 +53,10 @@ class UnifiedRunner:
         all_tasks = []
         for batch_idx, account_batch in enumerate(account_batches):
             if batch_idx > 0:
+                variance = settings.SETTINGS.get("BATCH_DELAY_VARIANCE", 0.2)
                 delay = random.uniform(
-                    self.batch_delay * 0.8,
-                    self.batch_delay * 1.2
+                    self.batch_delay * (1 - variance),
+                    self.batch_delay * (1 + variance),
                 )
                 logger.info(f"Waiting {delay:.1f}s before batch {batch_idx + 1}/{len(account_batches)}...")
                 await asyncio.sleep(delay)

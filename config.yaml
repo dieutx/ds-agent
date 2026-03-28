@@ -24,6 +24,15 @@ default:
     # delay in seconds
     INTRA_BATCH_DELAY: [20, 200]
 
+    # max concurrent token checks
+    CHECK_CONCURRENCY: 10
+
+    # how many recent messages to fetch for AI context
+    AI_CONTEXT_MESSAGES: 100
+
+    # batch delay variance factor (0.8 = ±20%)
+    BATCH_DELAY_VARIANCE: 0.2
+
     RANDOM_MESSAGES: ["gm", "GM", "gn", "GN"]
 
   AI:

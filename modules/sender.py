@@ -130,7 +130,8 @@ class MessageSender:
 
     async def _send_ai_message(self, channel_id: str):
         async with DiscordUserClient(token=self.account, proxy=self.proxy) as client:
-            result = await client.get_channel_messages(channel_id, limit=100)
+            msg_limit = settings.SETTINGS.get("AI_CONTEXT_MESSAGES", 100)
+            result = await client.get_channel_messages(channel_id, limit=msg_limit)
             if result is None:
                 raise Exception
 

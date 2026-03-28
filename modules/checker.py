@@ -61,7 +61,9 @@ class TokenChecker:
             self.account_proxy_map: Dict[str, Optional[str]] = {account: None for account in ACCOUNTS}
 
         self.results: List[TokenInfo] = []
-        self.semaphore = asyncio.Semaphore(10)
+        self.semaphore = asyncio.Semaphore(
+            settings.SETTINGS.get("CHECK_CONCURRENCY", 10)
+        )
 
     async def check_all(self) -> List[TokenInfo]:
         if not self.account_proxy_map:
