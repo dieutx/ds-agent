@@ -3,7 +3,7 @@
 # 1. Uses hermes (ChatGPT) to generate a meme image
 # 2. Uses hermes to generate a caption
 # 3. Posts both to Nous Research Discord meme channel + Telegram group
-set -euo pipefail
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
