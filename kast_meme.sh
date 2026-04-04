@@ -29,57 +29,61 @@ MEME_FILE="$MEDIA_DIR/kast_meme_$(date +%Y%m%d).png"
 
 echo "[$(date)] Generating Kast meme..."
 
-# Kast-specific topics — based on actual channel vibe
+# Kast-specific topics — card, Pengu, payments, crypto-fintech vibe
 TOPICS=(
   "me flexing my Kast card at the store while everyone else fumbles with bank apps"
   "traditional bank: please wait 2-5 business days vs Kast: money sent, done"
-  "me when I get my Kast card in the mail — tap to pay like a boss, stonks energy"
+  "me when I get my Kast card in the mail — tap to pay like a boss"
   "normal people phone: 10 different finance apps vs Kast: everything in one place"
-  "the Kast Pengu mascot conquering the world of payments one country at a time"
-  "bank tellers when they see you paying with a Kast crypto card at the grocery store"
+  "the Kast Pengu mascot conquering the world of payments"
+  "bank tellers when they see you paying with a Kast crypto card"
   "waiting for my bank transfer vs sending money with Kast instantly"
-  "me explaining to my grandma that my Kast card works everywhere Visa is accepted"
   "Pengu holding a Kast card like its the infinity gauntlet of finance"
   "friends still using slow bank transfers while I already paid with Kast and left"
   "the whole squad when someone pulls out the black Kast card at dinner"
-  "traveling abroad with 5 different cards vs just one Kast card that works globally"
-  "me checking my Kast app at 3am because the UI is just too clean"
-  "when the cashier says they accept Visa and you pull out the Kast card with lightning design"
-  "old finance: fees everywhere, slow transfers, hold music vs Kast: just works"
+  "traveling abroad with 5 different cards vs just one Kast card"
+  "when the cashier says they accept Visa and you pull out the Kast card"
+  "old finance: fees everywhere, slow transfers vs Kast: just works"
+  "Kast Pengu watching people still use traditional banks"
+  "the vibe when your Kast card arrives vs waiting for bank approval"
 )
 
-# Kast meme styles — matching what actually gets posted in the channel
-STYLES=(
-  "Multi-panel comparison meme (2-4 panels): left side shows frustrating old way, right side shows Kast solving it. Include the Kast logo (white K on black) or a dark premium-looking Kast Visa card with lightning design. Clean modern look."
-  "Reaction meme with a cute blue penguin mascot (Pengu — Kast's mascot). The penguin is small, round, blue and white with a happy face. Show Pengu doing something confident or funny related to payments/finance. Polished illustration style."
-  "Product showcase meme: a sleek dark Kast Visa card (black card, white K logo, lightning bolt design, Mastercard or Visa logo) shown in a cool context — someone flexing it, tapping to pay, or holding it dramatically. Cinematic/premium feel with dark blue/purple lighting."
-  "Before/After or expectation vs reality meme about payments. Left panel: old frustrating way (slow bank, fees, multiple apps). Right panel: clean Kast solution. Include the Kast card or Kast logo. Modern clean design, not messy."
-  "Classic meme template (Drake, Distracted Boyfriend, Expanding Brain, Stonks guy) but themed around Kast card, Pengu mascot, or Kast payments. Short punchy text, max 5-8 words per section."
+# Same classic meme templates as Nous bot
+TEMPLATES=(
+  "Drake Hotline Bling (top panel: reject, bottom panel: approve)"
+  "Distracted Boyfriend (boyfriend looking at new girl, girlfriend is jealous)"
+  "Sleeping Shaq / I Sleep vs Real Shit (boring thing: i sleep, exciting thing: real shit)"
+  "Expanding Brain (4 panels from small brain to galaxy brain, increasingly absurd)"
+  "Two Buttons (sweating guy choosing between two buttons)"
+  "This is Fine (dog sitting in burning room)"
+  "Grus Plan (4 panels: plan step 1, step 2, unexpected result, stare at unexpected result)"
+  "Batman Slapping Robin (Robin says something wrong, Batman slaps and corrects)"
+  "Woman Yelling at Cat (angry woman on left, confused cat at dinner table on right)"
+  "Change My Mind (guy at table with sign that has a hot take)"
+  "One Does Not Simply (Boromir saying one does not simply do X)"
+  "Waiting Skeleton (skeleton on bench waiting for something that takes forever)"
 )
 
 TOPIC="${TOPICS[$((RANDOM % ${#TOPICS[@]}))]}"
-STYLE="${STYLES[$((RANDOM % ${#STYLES[@]}))]}"
+TEMPLATE="${TEMPLATES[$((RANDOM % ${#TEMPLATES[@]}))]}"
 
 echo "[$(date)] Topic: $TOPIC"
-echo "[$(date)] Style: ${STYLE:0:60}..."
+echo "[$(date)] Template: $TEMPLATE"
 
-HOME=/home/hermes_chatgpt "$HERMES" chat -q "Create a meme image for the Kast (kast.xyz) Discord community.
+HOME=/home/hermes_chatgpt "$HERMES" chat -q "Create a meme image about: $TOPIC.
 
-TOPIC: $TOPIC
+TEMPLATE: Use the '$TEMPLATE' meme format. It must be visually recognizable as this specific meme.
 
-STYLE: $STYLE
-
-KEY BRAND ELEMENTS (include at least one):
-- Kast card: a sleek dark/black Visa or Mastercard card with a white K logo and blue lightning bolt design
-- Pengu: Kast's cute round blue-and-white penguin mascot with a happy/confident expression
-- Kast logo: white K on black square background
-
-RULES:
-- Text must be SHORT (max 5-8 words per text area)
-- High quality, polished look — NOT low-effort Impact font memes
-- Must feel like a real community member made it, not a brand account
+STYLE RULES (follow strictly):
+- TEXT MUST BE SHORT: max 5-8 words per text area. Never more.
+- The humor comes from the TEMPLATE + SHORT TEXT combo, not walls of text
+- Bold Impact font, white text with black outline
+- Clean and readable — no clutter, no paragraphs
+- Kast card and Pengu (blue penguin mascot) references are encouraged
 - NEVER mention AI, bots, Claude, Hermes, or automation
-- The vibe is: premium fintech meets crypto culture meets cute mascot
+
+BAD: 'When you spend 20 minutes trying to transfer money and the bank says please wait 2-5 business days'
+GOOD: 'Bank: 2-5 business days' / 'Kast: done'
 
 Save to $MEME_FILE." -Q 2>&1 | tail -5
 

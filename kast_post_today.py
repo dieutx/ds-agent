@@ -48,34 +48,38 @@ TOPICS = [
     "me checking my Kast app at 3am because the UI is just too clean",
 ]
 
-STYLES = [
-    "Multi-panel comparison meme (2-4 panels): left side shows frustrating old way, right side shows Kast solving it. Include the Kast logo (white K on black) or a dark premium-looking Kast Visa card with lightning design. Clean modern look.",
-    "Reaction meme with a cute blue penguin mascot (Pengu — Kast's mascot). The penguin is small, round, blue and white with a happy face. Show Pengu doing something confident or funny related to payments/finance. Polished illustration style.",
-    "Product showcase meme: a sleek dark Kast Visa card (black card, white K logo, lightning bolt design) shown in a cool context — someone flexing it, tapping to pay, or holding it dramatically. Cinematic/premium feel with dark blue/purple lighting.",
-    "Before/After or expectation vs reality meme about payments. Left: old frustrating way. Right: clean Kast solution. Include the Kast card or Kast logo. Modern clean design.",
-    "Classic meme template (Drake, Distracted Boyfriend, Expanding Brain, Stonks guy) but themed around Kast card, Pengu mascot, or Kast payments. Short punchy text, max 5-8 words per section.",
+TEMPLATES = [
+    "Drake Hotline Bling (top panel: reject, bottom panel: approve)",
+    "Distracted Boyfriend (boyfriend looking at new girl, girlfriend is jealous)",
+    "Sleeping Shaq / I Sleep vs Real Shit (boring thing: i sleep, exciting thing: real shit)",
+    "Expanding Brain (4 panels from small brain to galaxy brain, increasingly absurd)",
+    "Two Buttons (sweating guy choosing between two buttons)",
+    "This is Fine (dog sitting in burning room)",
+    "Grus Plan (4 panels: plan step 1, step 2, unexpected result, stare at unexpected result)",
+    "Batman Slapping Robin (Robin says something wrong, Batman slaps and corrects)",
+    "Woman Yelling at Cat (angry woman on left, confused cat at dinner table on right)",
+    "Change My Mind (guy at table with sign that has a hot take)",
+    "One Does Not Simply (Boromir saying one does not simply do X)",
+    "Waiting Skeleton (skeleton on bench waiting for something that takes forever)",
 ]
 
 
-def generate_meme(meme_path: str, topic: str, style: str) -> bool:
+def generate_meme(meme_path: str, topic: str, template: str) -> bool:
     """Generate a meme image using Hermes. Returns True on success."""
-    prompt = f"""Create a meme image for the Kast (kast.xyz) Discord community.
+    prompt = f"""Create a meme image about: {topic}.
 
-TOPIC: {topic}
+TEMPLATE: Use the '{template}' meme format. It must be visually recognizable as this specific meme.
 
-STYLE: {style}
-
-KEY BRAND ELEMENTS (include at least one):
-- Kast card: a sleek dark/black Visa or Mastercard card with a white K logo and blue lightning bolt design
-- Pengu: Kast's cute round blue-and-white penguin mascot with a happy/confident expression
-- Kast logo: white K on black square background
-
-RULES:
-- Text must be SHORT (max 5-8 words per text area)
-- High quality, polished look — NOT low-effort Impact font memes
-- Must feel like a real community member made it, not a brand account
+STYLE RULES (follow strictly):
+- TEXT MUST BE SHORT: max 5-8 words per text area. Never more.
+- The humor comes from the TEMPLATE + SHORT TEXT combo, not walls of text
+- Bold Impact font, white text with black outline
+- Clean and readable — no clutter, no paragraphs
+- Kast card and Pengu (blue penguin mascot) references are encouraged
 - NEVER mention AI, bots, Claude, Hermes, or automation
-- The vibe is: premium fintech meets crypto culture meets cute mascot
+
+BAD: 'When you spend 20 minutes trying to transfer money and the bank says please wait 2-5 business days'
+GOOD: 'Bank: 2-5 business days' / 'Kast: done'
 
 Save to {meme_path}."""
 
@@ -189,27 +193,27 @@ def main():
     print(f"[{time.strftime('%H:%M:%S')}] Generating {num_memes} Kast meme(s)...")
 
     used_topics = []
-    used_styles = []
+    used_templates = []
 
     for i in range(num_memes):
-        # Pick unique topic/style
+        # Pick unique topic/template
         topic = random.choice([t for t in TOPICS if t not in used_topics])
-        style = random.choice([s for s in STYLES if s not in used_styles])
+        template = random.choice([t for t in TEMPLATES if t not in used_templates])
         used_topics.append(topic)
-        used_styles.append(style)
+        used_templates.append(template)
 
         ts = time.strftime("%Y%m%d_%H%M%S")
         meme_path = str(MEDIA_DIR / f"kast_{ts}_{i}.png")
 
         print(f"\n[Meme {i+1}/{num_memes}]")
         print(f"  Topic: {topic[:60]}...")
-        print(f"  Style: {style[:50]}...")
+        print(f"  Template: {template[:50]}...")
 
         # Generate with retry
         success = False
         for attempt in range(1, 4):
             print(f"  Generating (attempt {attempt}/3)...")
-            if generate_meme(meme_path, topic, style):
+            if generate_meme(meme_path, topic, template):
                 print(f"  Generated: {meme_path}")
                 success = True
                 break
