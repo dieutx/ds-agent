@@ -104,14 +104,21 @@ fi
 
 echo "[$(date)] Caption: $CAPTION"
 
-# Post to Discord
+# Post to Discord (try proxy, fallback to direct)
 echo "[$(date)] Posting to Discord channel $CHANNEL_ID..."
-python3 "$SCRIPT_DIR/post_meme.py" \
+if ! python3 "$SCRIPT_DIR/post_meme.py" \
   --token "$DISCORD_TOKEN" \
   --channel "$CHANNEL_ID" \
   --proxy "$PROXY" \
   --image "$MEME_FILE" \
-  --caption "$CAPTION"
+  --caption "$CAPTION" 2>/dev/null; then
+  echo "[$(date)] Proxy failed, posting direct..."
+  python3 "$SCRIPT_DIR/post_meme.py" \
+    --token "$DISCORD_TOKEN" \
+    --channel "$CHANNEL_ID" \
+    --image "$MEME_FILE" \
+    --caption "$CAPTION"
+fi
 
 # Post to Telegram
 echo "[$(date)] Posting to Telegram group $TG_CHAT_ID..."
