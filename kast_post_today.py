@@ -61,6 +61,18 @@ TEMPLATES = [
     "Change My Mind (guy at table with sign that has a hot take)",
     "One Does Not Simply (Boromir saying one does not simply do X)",
     "Waiting Skeleton (skeleton on bench waiting for something that takes forever)",
+    "Stonks (man in suit with rising arrow, used when something goes up or feels like a win)",
+    "Surprised Pikachu (pikachu shocked face, used when obvious outcome happens)",
+    "Spiderman Pointing at Spiderman (two identical spidermen pointing at each other)",
+    "Is This a Pigeon (anime guy pointing at butterfly asking is this X)",
+    "Left Exit 12 Off Ramp (car swerving off highway to take the exit at last second)",
+    "Bernie Sanders Asking For Financial Support (I am once again asking for X)",
+    "Panik Kalm Panik (3 panels: panic, calm, panic again)",
+    "Trade Offer (guy presenting a trade offer: I receive X, you receive Y)",
+    "They are the same picture (Pam from The Office saying both images are the same)",
+    "Gigachad (ultra masculine chad face, used to show superiority or flex)",
+    "NPC meme (gray emotionless NPC face vs enlightened/based alternative)",
+    "Always Has Been (two astronauts in space, one pointing gun: wait its all X? always has been)",
 ]
 
 
